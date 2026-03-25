@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weekly Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#c8b99a;color:#2c2318;font-family:'DM Sans',sans-serif;-webkit-font-smoothing:antialiased}
+.app{min-height:100vh;background:#c8b99a;padding-bottom:100px}
+.topbar{background:#c8b99a;border-bottom:1px solid #a8967a;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-bar{width:4px;height:26px;background:#3d6b4a;border-radius:2px;flex-shrink:0}
+.logo-name{font-family:'Syne',sans-serif;font-size:14px;font-weight:500;color:#3d3025;letter-spacing:0.5px}
+.logo-week{font-size:11px;color:#8a7a65;margin-top:2px}
+.nav{display:flex;gap:2px}
+.sync-area{display:flex;align-items:center;gap:8px}
+.backup-label{font-size:11px;color:#8a7a65;font-weight:300;white-space:nowrap}
+.gdrive-btn{background:transparent;border:1px solid #a8967a;color:#6b5d4a;border-radius:4px;padding:6px 12px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:400;transition:all .18s;white-space:nowrap}
+.gdrive-btn:hover{border-color:#9a8a70;color:#2c2318;background:#b5a488}
+.nav-btn{background:transparent;border:none;color:#6b5d4a;padding:8px 18px;border-radius:4px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:400;letter-spacing:0.3px;transition:color .2s,background .2s}
+.nav-btn:hover{color:#2c2318;background:#b5a488}
+.nav-btn.active{color:#2d5a38;background:#d4e8d8}
+.panel{max-width:960px;margin:0 auto;padding:52px 40px 0;display:none}
+.panel.active{display:block}
+.shd{margin-bottom:40px}
+.shd-rule{width:20px;height:2px;background:#3d6b4a;border-radius:1px;margin-bottom:14px}
+.shd-title{font-family:'Syne',sans-serif;font-size:23px;font-weight:500;color:#1e160c;letter-spacing:-0.3px}
+.shd-sub{font-size:13px;color:#6b5d4a;margin-top:6px;font-weight:300}
+.card{background:#ddd3c0;border:1px solid #c4b49a;border-radius:5px;padding:24px 28px;margin-bottom:12px}
+.card-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:600;color:#7a6a55;letter-spacing:2px;text-transform:uppercase;margin-bottom:18px}
+.input{background:#c8b99a;border:1px solid #a8967a;border-radius:4px;color:#2c2318;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;padding:10px 14px;width:100%;transition:border-color .2s;resize:vertical;line-height:1.6}
+.input:focus{outline:none;border-color:#3d6b4a}
+.input::placeholder{color:#9a8a75}
+textarea.input{min-height:80px}
+select.input{cursor:pointer}
+
+.btn{border:1px solid #a8967a;background:transparent;color:#6b5d4a;border-radius:4px;padding:9px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:400;transition:all .18s;display:inline-flex;align-items:center;gap:6px;letter-spacing:0.2px}
+.btn:hover{border-color:#9a8a70;color:#2c2318;background:#b5a488}
+.btn.sage{border-color:#4a7a58;color:#2d5a38;background:#d4e8d8}
+.btn.sage:hover{border-color:#2d5a38;background:#c2ddc8}
+.btn.ghost{border-color:transparent;color:#6b5d4a}
+.btn.ghost:hover{border-color:#a8967a;color:#3d3025;background:#b5a488}
+.btn.danger{border-color:transparent;color:#9a8a75;background:transparent}
+.btn.danger:hover{color:#7a2e10;border-color:#e8c8b0}
+.btn.sm{padding:5px 11px;font-size:12px}
+.pri-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pri-num{font-family:'Syne',sans-serif;font-size:11px;color:#3d6b4a;font-weight:600;width:18px;flex-shrink:0;text-align:right;letter-spacing:.5px}
+.drag-hdl{color:#9a8a75;cursor:grab;font-size:13px;padding:0 4px;user-select:none;line-height:1;transition:color .15s}
+.drag-hdl:hover{color:#6b5d4a}
+.drag-hdl:active{cursor:grabbing}
+.proj-row{display:flex;gap:8px;margin-bottom:4px;align-items:center;flex-wrap:wrap}
+.proj-block{margin-bottom:12px}
+.timeline-btn,.challenge-btn{padding:2px 7px;border-radius:3px;font-size:10px;font-weight:500;font-family:'DM Sans',sans-serif;letter-spacing:.3px;cursor:pointer;border:1px solid;white-space:nowrap;transition:all .15s;background:transparent;color:#8a7a65;border-color:#a8967a}
+.timeline-btn.active,.challenge-btn.active{opacity:1}
+.timeline-btn:hover,.challenge-btn:hover{opacity:.8}
+.pill-group{display:flex;gap:3px;flex-wrap:nowrap}
+.subtask-list{padding:6px 0 4px 28px;display:flex;flex-direction:column;gap:4px}
+.subtask-row{display:flex;align-items:center;gap:8px}
+.subtask-row input[type=checkbox]{accent-color:#3d6b4a;width:14px;height:14px;flex-shrink:0;cursor:pointer}
+.subtask-row input[type=checkbox]:checked+.subtask-text{text-decoration:line-through;color:#9a8a75}
+.subtask-text{flex:1;font-size:13px;font-weight:300;color:#3d3025;background:transparent;border:none;border-bottom:1px solid transparent;padding:3px 0;font-family:'DM Sans',sans-serif}
+.subtask-text:focus{outline:none;border-bottom-color:#a8967a}
+.add-subtask-btn{font-size:11px;color:#8a7a65;background:none;border:none;cursor:pointer;padding:2px 0 0 0;font-family:'DM Sans',sans-serif;text-decoration:underline}
+.add-subtask-btn:hover{color:#3d6b4a}
+.adhoc-solo-card{background:#c8b99a;border:1px solid #a8967a;border-radius:4px;padding:14px 16px;margin-bottom:8px}
+.adhoc-solo-row{display:flex;gap:8px;margin-bottom:8px;align-items:center;flex-wrap:wrap}
+.status-pill{padding:5px 12px;border-radius:3px;font-size:11px;font-weight:500;font-family:'DM Sans',sans-serif;letter-spacing:.5px;cursor:pointer;border:1px solid;white-space:nowrap;transition:opacity .15s}
+.status-pill:hover{opacity:.8}
+.week-nav{display:flex;align-items:center;gap:6px;overflow-x:auto;margin-bottom:32px;padding-bottom:2px}
+.wchip{padding:5px 13px;border-radius:3px;border:1px solid #a8967a;background:transparent;color:#6b5d4a;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.wchip:hover{color:#2c2318;border-color:#9a8a70}
+.wchip.active{color:#2d5a38;border-color:#4a7a58;background:#d4e8d8}
+.comp-row{display:flex;align-items:center;gap:12px;margin-bottom:8px;padding:13px 16px;background:#c8b99a;border-radius:4px;border:1px solid #a8967a;transition:border-color .15s}
+.comp-row:hover{border-color:#9a8a70}
+.comp-pip{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.comp-label{flex:1;font-size:14px;color:#3d3025;font-weight:300}
+.comp-sel{background:#bfae94;border:1px solid #a8967a;border-radius:3px;color:#3d3025;font-family:'DM Sans',sans-serif;font-size:12px;padding:4px 8px;cursor:pointer}
+.adhoc-card{background:#c8b99a;border:1px solid #a8967a;border-left:2px solid #9a8a70;border-radius:4px;padding:14px 16px;margin-bottom:8px}
+.adhoc-card.flagged{border-left-color:#8b4513}
+.adhoc-row{display:flex;gap:8px;margin-bottom:8px;align-items:center}
+.flag-tog{display:flex;align-items:center;gap:7px;font-size:12px;color:#6b5d4a;cursor:pointer;padding:4px 0;font-weight:300;transition:color .15s;user-select:none}
+.flag-tog input{accent-color:#8b4513;width:13px;height:13px;cursor:pointer}
+.flag-tog.flagged{color:#8b4513}
+.summary-box{background:#c8b99a;border:1px solid #4a7a58;border-radius:4px;padding:18px 20px;font-size:13px;line-height:1.85;color:#3d3025;white-space:pre-wrap;font-family:'DM Sans',sans-serif;font-weight:300}
+.new-week-bar{background:#d4e8d8;border:1px solid #4a7a58;border-radius:5px;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.nw-text{font-size:14px;color:#2d5a38;font-weight:300}
+.nw-text strong{font-family:'Syne',sans-serif;font-weight:500}
+.empty{text-align:center;padding:80px 24px}
+.empty h3{font-family:'Syne',sans-serif;color:#8a7a65;font-size:16px;font-weight:500;margin-bottom:10px}
+.empty p{font-size:13px;color:#8a7a65;line-height:1.75;font-weight:300}
+.divider{border:none;border-top:1px solid #a8967a;margin:28px 0}
+.sug-label{font-size:10px;color:#7a6a55;letter-spacing:1.5px;text-transform:uppercase;font-family:'Syne',sans-serif;margin:18px 0 10px}
+.sug-row{display:flex;flex-wrap:wrap;gap:6px}
+.btn-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+@media(max-width:700px){.topbar{flex-wrap:wrap;gap:10px;padding:14px 20px}.nav{order:3;width:100%}.panel{padding:32px 20px 0}.card{padding:20px}}
+
+/* ── Print / Report styles ─────────────────────────────────────────── */
+@media print {
+  .topbar,.nav,.week-nav,.btn,.btn-row,.drag-hdl,.flag-tog input,.no-print{display:none!important}
+  .panel{display:block!important;padding:0!important}
+  body{background:#fff;color:#1a1008}
+  .card{background:#f7f3ed;border:1px solid #d4c8b8;break-inside:avoid}
+  .input,.comp-sel{border:none;background:transparent;padding:0}
+  .adhoc-card{background:#f0ebe0;break-inside:avoid}
+  .summary-box{background:#f0ebe0;border-color:#8ab898}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-bar"></div>
+      <div>
+        <div class="logo-name">Weekly Tracker</div>
+        <div class="logo-week" id="header-week"></div>
+      </div>
+    </div>
+    <div class="sync-area">
+      <span class="backup-label" id="backup-label">—</span>
+      <button class="gdrive-btn" onclick="exportBackup()" title="Download a backup file">⬇ Backup</button>
+      <button class="gdrive-btn" onclick="document.getElementById('import-input').click()" title="Restore from backup">⬆ Restore</button>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importBackup(event)">
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showTab('plate')">My Plate</button>
+      <button class="nav-btn" onclick="showTab('monday')">Monday</button>
+      <button class="nav-btn" onclick="showTab('friday')">Friday</button>
+    </nav>
+  </div>
+
+  <!-- MY PLATE -->
+  <div class="panel active" id="panel-plate">
+    <div class="shd">
+      <div class="shd-rule"></div>
+      <div class="shd-title">My Plate</div>
+      <div class="shd-sub">Living source of truth — always current, never resets</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Priorities</div>
+      <div id="plate-priorities"></div>
+      <button class="btn sage sm" onclick="addPlatePriority()">+ Priority</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Projects</div>
+      <div id="plate-projects"></div>
+      <button class="btn sage sm" onclick="addPlateProject()">+ Project</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Ad-Hoc Solo Tasks</div>
+      <div id="plate-adhoc-solo"></div>
+      <button class="btn sage sm" onclick="addAdHocSolo()">+ Task</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Ongoing Commitments</div>
+      <textarea class="input" id="plate-commitments" style="min-height:96px"
+        placeholder="Recurring responsibilities, standing meetings…"
+        oninput="savePlate()"></textarea>
+    </div>
+    <div class="card">
+      <div class="card-label">Charlie Touch Points</div>
+      <textarea class="input" id="plate-charlie" style="min-height:96px"
+        placeholder="Notes on Charlie check-ins, topics to raise, follow-ups…"
+        oninput="plate.charlie=this.value;save('wt_plate_h',plate)"></textarea>
+    </div>
+    <div class="card">
+      <div class="card-label">Crosschq Touch Points</div>
+      <textarea class="input" id="plate-crosschq" style="min-height:96px"
+        placeholder="Notes on Crosschq check-ins, topics to raise, follow-ups…"
+        oninput="plate.crosschq=this.value;save('wt_plate_h',plate)"></textarea>
+    </div>
+  </div>
+
+  <!-- MONDAY -->
+  <div class="panel" id="panel-monday">
+    <div class="shd">
+      <div class="shd-rule"></div>
+      <div class="shd-title">Monday Kickoff</div>
+      <div class="shd-sub" id="mon-week-label"></div>
+    </div>
+    <div id="week-nav-mon" class="week-nav"></div>
+    <div id="monday-content"></div>
+  </div>
+
+  <!-- FRIDAY -->
+  <div class="panel" id="panel-friday">
+    <div class="shd">
+      <div class="shd-rule"></div>
+      <div class="shd-title">Friday Wrap-Up</div>
+      <div class="shd-sub" id="fri-week-label"></div>
+    </div>
+    <div id="week-nav-fri" class="week-nav"></div>
+    <div id="friday-content"></div>
+  </div>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+const TIMELINE_OPTS = ['asap','t.week','n.week','block'];
+const TIMELINE_STYLES = {
+  'asap':   {bg:'#f0d8c8',text:'#7a2e10',border:'#c08060'},
+  't.week': {bg:'#e8dcc8',text:'#6b4a10',border:'#c0a060'},
+  'n.week': {bg:'#d4e8d8',text:'#2d5a38',border:'#8ab898'},
+  'block':  {bg:'#e8e4dc',text:'#7a6a55',border:'#b5a888'},
+};
+const CHALLENGE_OPTS = ['p1','fast','slow','unclear'];
+const CHALLENGE_STYLES = {
+  'p1':      {bg:'#f0d8c8',text:'#7a2e10',border:'#c08060'},
+  'fast':    {bg:'#d4e8d8',text:'#2d5a38',border:'#8ab898'},
+  'slow':    {bg:'#e8dcc8',text:'#6b4a10',border:'#c0a060'},
+  'unclear': {bg:'#e8e4dc',text:'#7a6a55',border:'#b5a888'},
+};
+// Legacy kept for Friday wrap-up completion tracking
+const COMP_COLORS = {Completed:'#3d6b4a',Partial:'#7a5c1e','Not Started':'#9a8a75'};
+
+// ── Backup / Restore ───────────────────────────────────────────────────────
+function exportBackup(){
+  const data = { plate, weeks, savedAt: new Date().toISOString(), version: 1 };
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `weekly-tracker-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  localStorage.setItem('wt_last_backup', new Date().toISOString());
+  setBackupLabel('Downloaded ✓');
+  setTimeout(()=>updateBackupLabel(), 3000);
+}
+
+function importBackup(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if(!data.plate || !data.weeks) { alert('Invalid backup file.'); return; }
+      if(!confirm('Restore from this backup? Your current data will be replaced.')) return;
+      plate = data.plate;
+      weeks = data.weeks;
+      localStorage.setItem('wt_plate_h', JSON.stringify(plate));
+      localStorage.setItem('wt_weeks_h', JSON.stringify(weeks));
+      renderAll();
+      setBackupLabel('Restored ✓');
+      setTimeout(()=>updateBackupLabel(), 3000);
+    } catch(err) {
+      alert('Could not read backup file.');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function setBackupLabel(text){
+  const el = document.getElementById('backup-label');
+  if(el) el.textContent = text;
+}
+
+function updateBackupLabel(){
+  const saved = localStorage.getItem('wt_last_backup');
+  const el = document.getElementById('backup-label');
+  if(!el) return;
+  if(saved){
+    const d = new Date(saved);
+    el.textContent = 'Last backup: ' + d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  } else {
+    el.textContent = 'No backup yet';
+  }
+}
+
+// ── Storage ────────────────────────────────────────────────────────────────
+function load(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch{return d}}
+function save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+
+let plate = load('wt_plate_h', {
+  priorities:[{id:'p1',text:'Edit me — your first priority',rank:1}],
+  projects:[{id:'pr1',name:'Example project',status:'On Track',notes:''}],
+  commitments:'e.g. Weekly standup, 1:1 on Tuesdays'
+});
+let weeks = load('wt_weeks_h', {});
+let activeWeekKey = getWeekKey();
+let dragSrcIdx = null;
+
+function renderAll(){
+  activeWeekKey = getWeekKey();
+  ensureWeek(activeWeekKey);
+  renderPlate();
+  renderMonday();
+  renderFriday();
+}
+
+function getWeekKey(date){
+  const d = date ? new Date(date) : new Date();
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  const mon = new Date(d.setDate(diff));
+  const y = mon.getFullYear();
+  const m = String(mon.getMonth()+1).padStart(2,'0');
+  const dd = String(mon.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+function fmtWeek(key){
+  const mon=new Date(key+'T00:00:00'),fri=new Date(mon);
+  fri.setDate(fri.getDate()+4);
+  const o={month:'short',day:'numeric'};
+  return mon.toLocaleDateString('en-US',o)+' – '+fri.toLocaleDateString('en-US',o);
+}
+function savePlate(){
+  plate.commitments=document.getElementById('plate-commitments').value;
+  save('wt_plate_h',plate);
+}
+function ensureWeek(key){
+  if(weeks[key]) return;
+  const sorted=Object.keys(weeks).sort();
+  const prevKey=sorted.filter(k=>k<key).pop();
+  const prev=prevKey?weeks[prevKey]:null;
+  const prevFriPri=prev&&prev.friday&&prev.friday.priorities?prev.friday.priorities:[];
+  const prevMonPri=prev&&prev.monday&&prev.monday.priorities?prev.monday.priorities:[];
+  // Carry forward unfinished priorities from last Friday wrap-up, or fall back to Monday priorities
+  const unfinished=prevFriPri.length>0
+    ? prevFriPri.filter(p=>p.completion!=='Completed').map(p=>p.text)
+    : prevMonPri.map(p=>p.text);
+  const sugg=unfinished.length>0?unfinished.slice(0,3):plate.priorities.slice(0,3).map(p=>p.text);
+  weeks[key]={
+    key,
+    monday:{priorities:sugg.map((t,i)=>({id:'m'+Date.now()+i,text:t})),risks:'',constraints:''},
+    friday:{priorities:[],adHoc:[],carryForward:''}
+  };
+  save('wt_weeks_h',weeks);
+}
+function syncFriPri(w){
+  const existing=w.friday.priorities||[];
+  return w.monday.priorities.map(mp=>{
+    const f=existing.find(fp=>fp.id===mp.id);
+    return f?{...f,text:mp.text}:{id:mp.id,text:mp.text,completion:'Not Started',notes:''};
+  });
+}
+
+// ── Tab navigation ─────────────────────────────────────────────────────────
+function showTab(tab){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>{if(b.textContent.toLowerCase().startsWith(tab==='plate'?'my':tab)) b.classList.add('active')});
+  if(tab==='monday'){ensureWeek(activeWeekKey);renderMonday();}
+  if(tab==='friday'){ensureWeek(activeWeekKey);renderFriday();}
+}
+
+
+
+// ── Plate rendering ────────────────────────────────────────────────────────
+function renderPlate(){
+  document.getElementById('header-week').textContent=fmtWeek(getWeekKey());
+  document.getElementById('plate-commitments').value=plate.commitments||'';
+  document.getElementById('plate-charlie').value=plate.charlie||'';
+  document.getElementById('plate-crosschq').value=plate.crosschq||'';
+  renderPlatePriorities();
+  renderPlateProjects();
+  renderAdHocSolo();
+}
+function renderAdHocSolo(){
+  const el=document.getElementById('plate-adhoc-solo');
+  if(!el) return;
+  if(!plate.adHocSolo) plate.adHocSolo=[];
+  el.innerHTML='';
+  plate.adHocSolo.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.className='adhoc-solo-card';
+    div.innerHTML=`
+      <div class="adhoc-solo-row" style="flex-wrap:nowrap">
+        <input class="input" style="flex:1;min-width:0" value="${esc(t.text)}" placeholder="Task description…"
+          oninput="plate.adHocSolo[${i}].text=this.value;save('wt_plate_h',plate)">
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+          <div class="pill-group">${soloTimelinePills(t,i)}</div>
+          <div class="pill-group">${soloChallengePills(t,i)}</div>
+        </div>
+        <button class="btn danger sm" style="flex-shrink:0" onclick="plate.adHocSolo.splice(${i},1);save('wt_plate_h',plate);renderAdHocSolo()">✕</button>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+function soloTimelinePills(t,i){
+  return TIMELINE_OPTS.map(opt=>{
+    const s=TIMELINE_STYLES[opt];
+    const active=t.timeline===opt;
+    return `<button class="timeline-btn${active?' active':''}" style="${active?`background:${s.bg};color:${s.text};border-color:${s.border}`:''}"
+      onclick="plate.adHocSolo[${i}].timeline='${opt}';save('wt_plate_h',plate);renderAdHocSolo()">${opt}</button>`;
+  }).join('');
+}
+function soloChallengePills(t,i){
+  return CHALLENGE_OPTS.map(opt=>{
+    const s=CHALLENGE_STYLES[opt];
+    const active=t.challenge===opt;
+    return `<button class="challenge-btn${active?' active':''}" style="${active?`background:${s.bg};color:${s.text};border-color:${s.border}`:''}"
+      onclick="plate.adHocSolo[${i}].challenge='${opt}';save('wt_plate_h',plate);renderAdHocSolo()">${opt}</button>`;
+  }).join('');
+}
+function addAdHocSolo(){
+  if(!plate.adHocSolo) plate.adHocSolo=[];
+  plate.adHocSolo.push({id:'as'+Date.now(),text:'',timeline:'',challenge:''});
+  save('wt_plate_h',plate);
+  renderAdHocSolo();
+}
+
+function renderPlatePriorities(){
+  const el=document.getElementById('plate-priorities');
+  el.innerHTML='';
+  plate.priorities.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='pri-row';
+    row.draggable=true;
+    row.dataset.idx=i;
+    row.innerHTML=`
+      <span class="drag-hdl" title="Drag to reorder">⋮⋮</span>
+      <span class="pri-num">${i+1}</span>
+      <input class="input" value="${esc(p.text)}" placeholder="Priority ${i+1}"
+        oninput="plate.priorities[${i}].text=this.value;save('wt_plate_h',plate)">
+      <button class="btn danger sm" onclick="delPlatePriority('${p.id}')">✕</button>`;
+    row.addEventListener('dragstart',e=>{dragSrcIdx=i;e.dataTransfer.effectAllowed='move';});
+    row.addEventListener('dragover',e=>{e.preventDefault();e.dataTransfer.dropEffect='move';});
+    row.addEventListener('drop',e=>{
+      e.preventDefault();
+      if(dragSrcIdx===null||dragSrcIdx===i) return;
+      const arr=plate.priorities;
+      const [r]=arr.splice(dragSrcIdx,1);
+      arr.splice(i,0,r);
+      plate.priorities=arr.map((x,j)=>({...x,rank:j+1}));
+      save('wt_plate_h',plate);
+      dragSrcIdx=null;
+      renderPlatePriorities();
+    });
+    el.appendChild(row);
+  });
+}
+function timelinePills(pr, i, saveKey){
+  return TIMELINE_OPTS.map(opt=>{
+    const s=TIMELINE_STYLES[opt];
+    const active=pr.timeline===opt;
+    return `<button class="timeline-btn${active?' active':''}" style="${active?`background:${s.bg};color:${s.text};border-color:${s.border}`:''}"
+      onclick="${saveKey}[${i}].timeline='${opt}';save('wt_plate_h',plate);renderPlateProjects()">${opt}</button>`;
+  }).join('');
+}
+function challengePills(pr, i, saveKey){
+  return CHALLENGE_OPTS.map(opt=>{
+    const s=CHALLENGE_STYLES[opt];
+    const active=pr.challenge===opt;
+    return `<button class="challenge-btn${active?' active':''}" style="${active?`background:${s.bg};color:${s.text};border-color:${s.border}`:''}"
+      onclick="${saveKey}[${i}].challenge='${opt}';save('wt_plate_h',plate);renderPlateProjects()">${opt}</button>`;
+  }).join('');
+}
+function renderPlateProjects(){
+  const el=document.getElementById('plate-projects');
+  el.innerHTML='';
+  plate.projects.forEach((pr,i)=>{
+    const block=document.createElement('div');
+    block.className='proj-block';
+    if(!pr.subtasks) pr.subtasks=[];
+    const subtaskHtml=pr.subtasks.map((st,si)=>`
+      <div class="subtask-row">
+        <input type="checkbox" ${st.done?'checked':''} onchange="plate.projects[${i}].subtasks[${si}].done=this.checked;save('wt_plate_h',plate);renderPlateProjects()">
+        <input class="subtask-text" value="${esc(st.text)}" placeholder="Subtask…"
+          oninput="plate.projects[${i}].subtasks[${si}].text=this.value;save('wt_plate_h',plate)"
+          ${st.done?'style="text-decoration:line-through;color:#9a8a75"':''}>
+        <button class="btn danger sm" onclick="plate.projects[${i}].subtasks.splice(${si},1);save('wt_plate_h',plate);renderPlateProjects()">✕</button>
+      </div>`).join('');
+    block.innerHTML=`
+      <div class="proj-row" style="flex-wrap:nowrap">
+        <input class="input" style="flex:2 1 140px;min-width:0" value="${esc(pr.name)}" placeholder="Project name"
+          oninput="plate.projects[${i}].name=this.value;save('wt_plate_h',plate)">
+        <input class="input" style="flex:3 1 140px;min-width:0" value="${esc(pr.notes)}" placeholder="Notes"
+          oninput="plate.projects[${i}].notes=this.value;save('wt_plate_h',plate)">
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+          <div class="pill-group">${timelinePills(pr,i,'plate.projects')}</div>
+          <div class="pill-group">${challengePills(pr,i,'plate.projects')}</div>
+        </div>
+        <button class="btn danger sm" style="flex-shrink:0" onclick="delPlateProject('${pr.id}')">✕</button>
+      </div>
+      <div class="subtask-list">${subtaskHtml}
+        <button class="add-subtask-btn" onclick="plate.projects[${i}].subtasks.push({id:'st'+Date.now(),text:'',done:false});save('wt_plate_h',plate);renderPlateProjects()">+ subtask</button>
+      </div>`;
+    el.appendChild(block);
+  });
+}
+function addPlatePriority(){
+  plate.priorities.push({id:'p'+Date.now(),text:'',rank:plate.priorities.length+1});
+  save('wt_plate_h',plate);
+  renderPlatePriorities();
+}
+function delPlatePriority(id){
+  plate.priorities=plate.priorities.filter(x=>x.id!==id).map((x,i)=>({...x,rank:i+1}));
+  save('wt_plate_h',plate);
+  renderPlatePriorities();
+}
+function addPlateProject(){
+  plate.projects.push({id:'pr'+Date.now(),name:'',notes:'',timeline:'',challenge:'',subtasks:[]});
+  save('wt_plate_h',plate);
+  renderPlateProjects();
+}
+function delPlateProject(id){
+  plate.projects=plate.projects.filter(x=>x.id!==id);
+  save('wt_plate_h',plate);
+  renderPlateProjects();
+}
+
+
+// ── Week nav ───────────────────────────────────────────────────────────────
+function renderWeekNav(containerId){
+  const el=document.getElementById(containerId);
+  el.innerHTML='';
+  const cur=getWeekKey();
+  const keys=[cur,...Object.keys(weeks).filter(k=>k!==cur)].filter((k,i,a)=>a.indexOf(k)===i).slice(0,8);
+  keys.forEach(k=>{
+    const btn=document.createElement('button');
+    btn.className='wchip'+(activeWeekKey===k?' active':'');
+    btn.textContent=k===cur?'This week':fmtWeek(k);
+    btn.onclick=()=>{
+      activeWeekKey=k;
+      ensureWeek(k);
+      renderWeekNav('week-nav-mon');
+      renderWeekNav('week-nav-fri');
+      const activePanel = document.querySelector('.panel.active');
+      if(activePanel && activePanel.id==='panel-monday') renderMonday();
+      if(activePanel && activePanel.id==='panel-friday') renderFriday();
+    };
+    el.appendChild(btn);
+  });
+}
+
+// ── Monday ─────────────────────────────────────────────────────────────────
+function renderMonday(){
+  document.getElementById('mon-week-label').textContent=fmtWeek(activeWeekKey);
+  renderWeekNav('week-nav-mon');
+  const el=document.getElementById('monday-content');
+  const w=weeks[activeWeekKey];
+  if(!w || !w.monday){
+    el.innerHTML=`
+      <div class="new-week-bar">
+        <div class="nw-text"><strong>Begin your kickoff</strong> — ${fmtWeek(activeWeekKey)}</div>
+        <button class="btn sage" onclick="ensureWeek(activeWeekKey);renderMonday()">Start week</button>
+      </div>
+      <div class="empty"><h3>Nothing here yet</h3><p>Start your kickoff above.<br>Unfinished priorities from last week will carry over.</p></div>`;
+    return;
+  }
+  const mon=w.monday;
+  if(!mon.priorities) mon.priorities=[];
+  if(!mon.risks) mon.risks='';
+  if(!mon.constraints) mon.constraints='';
+  const sugg=plate.priorities.filter(p=>p.text&&!mon.priorities.find(mp=>mp.text===p.text)).slice(0,5);
+  let suggHtml='';
+  if(sugg.length){
+    suggHtml=`<div class="sug-label">From My Plate</div><div class="sug-row">`+
+      sugg.map((s,i)=>`<button class="btn ghost sm" onclick="addMonPriFromSugg(${JSON.stringify(s.text)})">+ ${s.text.slice(0,40)}${s.text.length>40?'…':''}</button>`).join('')+
+      `</div>`;
+  }
+  let priHtml=mon.priorities.map((p,i)=>`
+    <div class="pri-row">
+      <span class="pri-num">${i+1}</span>
+      <input class="input" value="${esc(p.text)}" placeholder="Priority ${i+1}"
+        oninput="weeks[activeWeekKey].monday.priorities[${i}].text=this.value;save('wt_weeks_h',weeks)">
+      <button class="btn danger sm" onclick="delMonPri('${p.id}')">✕</button>
+    </div>`).join('');
+  const addBtn=mon.priorities.length<5?`<button class="btn sage sm" style="margin-top:6px" onclick="addMonPri()">+ Add</button>`:'';
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-label">Priorities this week</div>
+      <div id="mon-pri-list">${priHtml}</div>
+      ${addBtn}
+      ${suggHtml}
+    </div>
+    <div class="card">
+      <div class="card-label">Risks & flags</div>
+      <textarea class="input" id="mon-risks" placeholder="What are you nervous about? Blockers, unclear scope, tricky stakeholders…"
+        oninput="weeks[activeWeekKey].monday.risks=this.value;save('wt_weeks_h',weeks)">${esc(mon.risks)}</textarea>
+    </div>
+    <div class="card">
+      <div class="card-label">Time constraints</div>
+      <textarea class="input" id="mon-constraints" placeholder="Out-of-office, long meetings… e.g. Out Thursday afternoon"
+        oninput="weeks[activeWeekKey].monday.constraints=this.value;save('wt_weeks_h',weeks)">${esc(mon.constraints)}</textarea>
+    </div>`;
+}
+function addMonPri(){
+  if(!weeks[activeWeekKey]) return;
+  weeks[activeWeekKey].monday.priorities.push({id:'mp'+Date.now(),text:''});
+  save('wt_weeks_h',weeks);
+  renderMonday();
+}
+function delMonPri(id){
+  if(!weeks[activeWeekKey]) return;
+  weeks[activeWeekKey].monday.priorities=weeks[activeWeekKey].monday.priorities.filter(x=>x.id!==id);
+  save('wt_weeks_h',weeks);
+  renderMonday();
+}
+function addMonPriFromSugg(text){
+  if(!weeks[activeWeekKey]) return;
+  weeks[activeWeekKey].monday.priorities.push({id:'mp'+Date.now(),text});
+  save('wt_weeks_h',weeks);
+  renderMonday();
+}
+
+// ── Friday ─────────────────────────────────────────────────────────────────
+function renderFriday(){
+  document.getElementById('fri-week-label').textContent=fmtWeek(activeWeekKey);
+  renderWeekNav('week-nav-fri');
+  const el=document.getElementById('friday-content');
+  const w=weeks[activeWeekKey];
+  if(!w || !w.monday){
+    el.innerHTML=`<div class="empty"><h3>Start your Monday kickoff first</h3><p>Set priorities on Monday,<br>then come back Friday to close out the week.</p></div>`;
+    return;
+  }
+  if(!w.friday) w.friday={priorities:[],adHoc:[],carryForward:''};
+  if(!w.friday.adHoc) w.friday.adHoc=[];
+  const fp=syncFriPri(w);
+  const summary=genSummary(w,fp);
+
+  let priHtml=fp.length===0
+    ? `<div style="color:#7a6a55;font-size:14px;font-weight:300">No priorities set — add them in Monday Kickoff.</div>`
+    : fp.map(p=>{
+        const col=COMP_COLORS[p.completion]||'#9a8a75';
+        return `<div class="comp-row">
+          <div class="comp-pip" style="background:${col}"></div>
+          <div class="comp-label">${esc(p.text)||'<em style="color:#9a8a75">Untitled priority</em>'}</div>
+          <select class="comp-sel" onchange="updFriPri('${p.id}',this.value)">
+            ${['Completed','Partial','Not Started'].map(o=>`<option${p.completion===o?' selected':''}>${o}</option>`).join('')}
+          </select>
+        </div>`;
+      }).join('');
+
+  const adHoc=(w.friday.adHoc||[]);
+  let adhocHtml=adHoc.map((a,i)=>`
+    <div class="adhoc-card${a.flagged?' flagged':''}" id="adhoc-${a.id}">
+      <div class="adhoc-row">
+        <input class="input" style="flex:3" value="${esc(a.description)}" placeholder="What came up?"
+          oninput="weeks[activeWeekKey].friday.adHoc[${i}].description=this.value;save('wt_weeks_h',weeks);refreshSummary()">
+        <input class="input" style="flex:1;min-width:80px" value="${esc(a.time)}" placeholder="~time"
+          oninput="weeks[activeWeekKey].friday.adHoc[${i}].time=this.value;save('wt_weeks_h',weeks);refreshSummary()">
+        <button class="btn danger sm" onclick="delAdHoc('${a.id}')">✕</button>
+      </div>
+      <div class="adhoc-row" style="margin-bottom:4px">
+        <input class="input" value="${esc(a.source)}" placeholder="Requested by / source"
+          oninput="weeks[activeWeekKey].friday.adHoc[${i}].source=this.value;save('wt_weeks_h',weeks);refreshSummary()">
+      </div>
+      <label class="flag-tog${a.flagged?' flagged':''}">
+        <input type="checkbox"${a.flagged?' checked':''} onchange="toggleFlag('${a.id}',this.checked)">
+        ${a.flagged?'Flagged for manager summary':'Flag for manager'}
+      </label>
+    </div>`).join('');
+
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-label">Priority check-in</div>
+      ${priHtml}
+    </div>
+    <div class="card">
+      <div class="card-label">Unplanned work</div>
+      <div id="adhoc-list">${adhocHtml}</div>
+      <button class="btn sage sm" style="margin-top:8px" onclick="addAdHoc()">+ Add item</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Carry forward</div>
+      <textarea class="input" id="fri-carry" placeholder="What's rolling into next week? Context, blockers, waiting-ons…"
+        oninput="weeks[activeWeekKey].friday.carryForward=this.value;save('wt_weeks_h',weeks);refreshSummary()">${esc(w.friday.carryForward)}</textarea>
+    </div>
+    <hr class="divider">
+    <div class="card">
+      <div class="card-label">Manager summary</div>
+      <div style="font-size:12px;color:#7a6a55;margin-bottom:14px;font-weight:300">Auto-generated from this week's data. Copy and send as-is.</div>
+      <div class="summary-box" id="summary-box">${summary||'Fill in priority check-ins above to generate your summary.'}</div>
+      <div class="btn-row">
+        <button class="btn sage sm" id="copy-btn" onclick="copySummary()">Copy to clipboard</button>
+        <button class="btn sm" onclick="downloadReport()">Download report</button>
+      </div>
+    </div>`;
+}
+
+function updFriPri(id, completion){
+  if(!weeks[activeWeekKey]) return;
+  const w=weeks[activeWeekKey];
+  const synced=syncFriPri(w).map(x=>x.id===id?{...x,completion}:x);
+  weeks[activeWeekKey].friday.priorities=synced;
+  save('wt_weeks_h',weeks);
+  refreshSummary();
+  // update pip color
+  const row=document.querySelector(`[onchange*="${id}"]`)?.closest('.comp-row');
+  if(row){const pip=row.querySelector('.comp-pip');if(pip)pip.style.background=COMP_COLORS[completion]||'#9a8a75';}
+}
+function addAdHoc(){
+  if(!weeks[activeWeekKey]) return;
+  if(!weeks[activeWeekKey].friday.adHoc) weeks[activeWeekKey].friday.adHoc=[];
+  weeks[activeWeekKey].friday.adHoc.push({id:'ah'+Date.now(),description:'',time:'',source:'',flagged:false});
+  save('wt_weeks_h',weeks);
+  renderFriday();
+}
+function delAdHoc(id){
+  if(!weeks[activeWeekKey]) return;
+  weeks[activeWeekKey].friday.adHoc=weeks[activeWeekKey].friday.adHoc.filter(x=>x.id!==id);
+  save('wt_weeks_h',weeks);
+  renderFriday();
+}
+function toggleFlag(id,checked){
+  if(!weeks[activeWeekKey]) return;
+  const a=weeks[activeWeekKey].friday.adHoc.find(x=>x.id===id);
+  if(a){a.flagged=checked;save('wt_weeks_h',weeks);}
+  renderFriday();
+}
+function refreshSummary(){
+  if(!weeks[activeWeekKey]) return;
+  const w=weeks[activeWeekKey];
+  const fp=syncFriPri(w);
+  const box=document.getElementById('summary-box');
+  if(box){const s=genSummary(w,fp);box.textContent=s||'Fill in priority check-ins above to generate your summary.';}
+}
+function genSummary(w,fp){
+  if(!w) return '';
+  const p=fp||syncFriPri(w);
+  const done=p.filter(x=>x.completion==='Completed').map(x=>x.text);
+  const part=p.filter(x=>x.completion==='Partial').map(x=>x.text);
+  const none=p.filter(x=>x.completion==='Not Started').map(x=>x.text);
+  const flagged=(w.friday.adHoc||[]).filter(x=>x.flagged);
+  const other=(w.friday.adHoc||[]).filter(x=>!x.flagged&&x.description);
+  let s=`Week of ${fmtWeek(w.key)}\n\n`;
+  if(done.length)    s+=`Completed: ${done.join(', ')}\n`;
+  if(part.length)    s+=`In progress: ${part.join(', ')}\n`;
+  if(none.length)    s+=`Carrying forward: ${none.join(', ')}\n`;
+  if(flagged.length){s+=`\nUnplanned work (flagged):\n`;flagged.forEach(a=>{s+=`• ${a.description}${a.time?` (~${a.time})`:''}${a.source?` — ${a.source}`:''}\n`;});}
+  if(other.length)   s+=`\nOther ad hoc: ${other.map(a=>a.description).join(', ')}\n`;
+  if(w.friday.carryForward) s+=`\nNext week: ${w.friday.carryForward}\n`;
+  return s.trim();
+}
+function copySummary(){
+  const box=document.getElementById('summary-box');
+  if(!box) return;
+  navigator.clipboard.writeText(box.textContent).then(()=>{
+    const btn=document.getElementById('copy-btn');
+    if(btn){btn.textContent='Copied';setTimeout(()=>{btn.textContent='Copy to clipboard';},2000);}
+  });
+}
+
+// ── Report download ────────────────────────────────────────────────────────
+function downloadReport(){
+  const w=weeks[activeWeekKey];
+  if(!w){alert('No week data to download.');return;}
+  const fp=syncFriPri(w);
+  const summary=genSummary(w,fp);
+  const weekLabel=fmtWeek(activeWeekKey);
+
+  const compIcon={Completed:'&#10003;',Partial:'&#8594;','Not Started':'&#8212;'};
+  const compCol={Completed:'#2d5a38',Partial:'#7a5c1e','Not Started':'#9a8a75'};
+
+  let priRows=fp.map(p=>{
+    const dl=p.deadline||'';
+    const dlFmt=dl?new Date(dl+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'}):'';
+    return `<tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #e8dfd2;color:${compCol[p.completion]||'#9a8a75'};font-size:16px;width:28px">${compIcon[p.completion]||'—'}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #e8dfd2">${esc(p.text)}</td>
+      ${dlFmt?`<td style="padding:10px 12px;border-bottom:1px solid #e8dfd2;color:#8a7a65;font-size:12px;white-space:nowrap">due ${dlFmt}</td>`:`<td style="border-bottom:1px solid #e8dfd2"></td>`}
+      <td style="padding:10px 12px;border-bottom:1px solid #e8dfd2;color:${compCol[p.completion]||'#9a8a75'};white-space:nowrap">${p.completion}</td>
+    </tr>`;
+  }).join('');
+
+  let adhocRows='';
+  const adHoc=w.friday.adHoc||[];
+  if(adHoc.length){
+    adhocRows=adHoc.map(a=>`
+      <tr style="${a.flagged?'background:#fdf6ee':''}">
+        <td style="padding:10px 12px;border-bottom:1px solid #e8dfd2">${a.flagged?'<span style="color:#8b4513;font-weight:500">&#9873; </span>':''}${esc(a.description)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e8dfd2;color:#7a6a55;white-space:nowrap">${esc(a.time)}</td>
+        <td style="padding:10px 12px;border-bottom:1px solid #e8dfd2;color:#7a6a55">${esc(a.source)}</td>
+      </tr>`).join('');
+  }
+
+  const html=`<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8">
+<title>Weekly Report — ${weekLabel}</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap" rel="stylesheet">
+<style>
+  body{font-family:'DM Sans',sans-serif;background:#f5f0e8;color:#2c2318;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+  .page{max-width:760px;margin:0 auto;padding:56px 48px}
+  .header{border-bottom:2px solid #3d6b4a;padding-bottom:24px;margin-bottom:40px;display:flex;justify-content:space-between;align-items:flex-end}
+  .header-left h1{font-family:'Syne',sans-serif;font-size:26px;font-weight:500;color:#1a0e08;margin:0 0 4px}
+  .header-left p{font-size:13px;color:#8a7a65;margin:0;font-weight:300}
+  .header-right{font-size:12px;color:#9a8a75;font-weight:300;text-align:right}
+  .section{margin-bottom:36px}
+  .section-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:600;color:#8a7a65;letter-spacing:2px;text-transform:uppercase;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:14px;font-weight:300}
+  .risks-box,.carry-box,.summary-box{background:#ede7da;border-radius:4px;padding:16px 18px;font-size:14px;line-height:1.75;color:#3d3025;font-weight:300;white-space:pre-wrap}
+  .summary-box{border-left:3px solid #3d6b4a;background:#eaf2ec}
+  .flag-badge{display:inline-block;background:#fff3e8;color:#8b4513;border:1px solid #e8c8a0;border-radius:3px;font-size:10px;font-weight:500;padding:2px 7px;margin-left:6px;vertical-align:middle;letter-spacing:.5px}
+  .no-data{color:#9a8a75;font-size:13px;font-weight:300;font-style:italic}
+  @media print{body{background:#fff}.page{padding:32px 40px}}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-left">
+      <h1>Weekly Report</h1>
+      <p>${weekLabel}</p>
+    </div>
+    <div class="header-right">Generated ${new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'})}</div>
+  </div>
+
+  ${w.monday.risks?`<div class="section">
+    <div class="section-title">Flags going into the week</div>
+    <div class="risks-box">${esc(w.monday.risks)}</div>
+  </div>`:''}
+
+  ${fp.length?`<div class="section">
+    <div class="section-title">Priority check-in</div>
+    <table><tbody>${priRows}</tbody></table>
+  </div>`:''}
+
+  ${adHoc.length?`<div class="section">
+    <div class="section-title">Unplanned work</div>
+    <table>
+      <thead><tr>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#8a7a65;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #d4c8b8">Item</th>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#8a7a65;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #d4c8b8;white-space:nowrap">Time</th>
+        <th style="text-align:left;padding:8px 12px;font-size:11px;font-weight:600;color:#8a7a65;letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid #d4c8b8">Source</th>
+      </tr></thead>
+      <tbody>${adhocRows}</tbody>
+    </table>
+  </div>`:``}
+
+  ${w.friday.carryForward?`<div class="section">
+    <div class="section-title">Carrying forward</div>
+    <div class="carry-box">${esc(w.friday.carryForward)}</div>
+  </div>`:''}
+
+  <div class="section">
+    <div class="section-title">Manager summary</div>
+    <div class="summary-box">${summary||'No summary generated yet — complete Friday wrap-up first.'}</div>
+  </div>
+</div>
+</body></html>`;
+
+  const blob=new Blob([html],{type:'text/html'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=`weekly-report-${activeWeekKey}.html`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ── Utility ────────────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ── Init ───────────────────────────────────────────────────────────────────
+renderAll();
+updateBackupLabel();
+</script>
+</body>
+</html>
