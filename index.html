@@ -819,6 +819,7 @@
       <button class="btn" onclick="openScheduleModal()">🗓 Schedule My Day</button>
       <button class="btn" onclick="openPlanTomorrowModal()">📆 Plan Tomorrow</button>
       <button class="btn" id="todayViewBtn" onclick="toggleTodayView()">📅 Today & Overdue</button>
+      <button class="btn" onclick="runPinterestPrioritization()" style="color:#E60023">📌 Pinterest Week</button>
       <button class="btn" onclick="openContextModal()" title="My Goals & Context">⚙️ My Context</button>
       <span style="margin-left:auto; font-size:12px; color:var(--muted); font-family:'DM Mono',monospace" id="taskCount"></span>
     </div>
@@ -2278,6 +2279,103 @@ Only include tasks you can fit. If no duration tag, assume 30 minutes.`;
 
   btn.disabled = false;
   btn.textContent = 'Plan Tomorrow →';
+}
+
+
+// ─── PINTEREST WEEK PRIORITIZATION ─────────────────────
+async function runPinterestPrioritization() {
+  addSystemMsg('Analyzing your Pinterest workload for the week...');
+
+  const pinterestId = getPinterestProjectId();
+  if (!pinterestId) {
+    addMsg('assistant', "I couldn't find a Pinterest project in your Todoist. Make sure it's named "pinterest" (case-insensitive).");
+    return;
+  }
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const dayOfWeek = today.getDay(); // 0=Sun, 6=Sat
+
+  // Get end of this work week (Friday)
+  const daysUntilFriday = dayOfWeek <= 5 ? 5 - dayOfWeek : 6;
+  const endOfWeek = new Date(today);
+  endOfWeek.setDate(today.getDate() + daysUntilFriday);
+  const endOfWeekStr = endOfWeek.toISOString().split('T')[0];
+
+  // All Pinterest tasks
+  const pinterestTasks = allTasks.filter(t => t.project_id === pinterestId);
+
+  // Split into categories
+  const overdue = pinterestTasks.filter(t => t.due && t.due.date.slice(0,10) < todayStr);
+  const dueToday = pinterestTasks.filter(t => t.due && t.due.date.slice(0,10) === todayStr);
+  const dueThisWeek = pinterestTasks.filter(t => t.due && t.due.date.slice(0,10) > todayStr && t.due.date.slice(0,10) <= endOfWeekStr);
+  const noDueDate = pinterestTasks.filter(t => !t.due);
+  const beyond = pinterestTasks.filter(t => t.due && t.due.date.slice(0,10) > endOfWeekStr);
+
+  const formatTask = t => `- [id:${t.id}] ${t.content} [labels: ${(t.labels||[]).join(', ') || 'none'}] [due: ${t.due?.date || 'none'}]`;
+
+  const taskBreakdown = [
+    overdue.length > 0 ? `OVERDUE (${overdue.length}):
+${overdue.map(formatTask).join('
+')}` : null,
+    dueToday.length > 0 ? `DUE TODAY (${dueToday.length}):
+${dueToday.map(formatTask).join('
+')}` : null,
+    dueThisWeek.length > 0 ? `DUE THIS WEEK (${dueThisWeek.length}):
+${dueThisWeek.map(formatTask).join('
+')}` : null,
+    noDueDate.length > 0 ? `NO DUE DATE (${noDueDate.length}):
+${noDueDate.map(formatTask).join('
+')}` : null,
+    beyond.length > 0 ? `BEYOND THIS WEEK (${beyond.length}):
+${beyond.map(formatTask).join('
+')}` : null,
+  ].filter(Boolean).join('
+
+');
+
+  const userCtx = await getUserContext();
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+
+  const prompt = `You are Megan's Pinterest work analyst. Today is ${dayName} (${todayStr}). Work week ends ${endOfWeekStr}. Megan works Mon–Fri 9am–5pm.${userCtx}
+
+Here are all her Pinterest project tasks broken down by urgency:
+
+${taskBreakdown || 'No Pinterest tasks found.'}
+
+Analyze her Pinterest workload and provide:
+
+**1. Week at a Glance**
+A brief (2-3 sentence) honest assessment of her Pinterest workload this week — is it manageable, overloaded, or light?
+
+**2. Priority Order for the Week**
+A numbered list of her Pinterest tasks in the order she should tackle them this week, with a one-line reason for each.
+
+**3. Concerns & Risks**
+Any overdue items, deadline crunches, or tasks that look underspecified (vague titles, no tags, no due dates) that she should address.
+
+**4. Recommendations**
+2-3 concrete suggestions — could be about sequencing, breaking tasks down, or flagging anything that needs a due date or clarity.
+
+Be direct and practical. She has ADHD so clear prioritization is high value. Don't be vague.`;
+
+  try {
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 2000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.find(b => b.type === 'text')?.text || 'No response received.';
+    addMsg('assistant', reply);
+  } catch(e) {
+    console.error(e);
+    addSystemMsg('Pinterest analysis failed. Try again.');
+  }
 }
 
 // ─── TODAY & OVERDUE VIEW ──────────────────────────────
