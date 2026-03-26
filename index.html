@@ -441,11 +441,14 @@ function renderAdHocSolo(){
   plate.adHocSolo.forEach((t,i)=>{
     const div=document.createElement('div');
     div.className='adhoc-solo-card';
+    const done = t.done||false;
     div.innerHTML=`
       <div class="adhoc-solo-row" style="flex-wrap:nowrap">
-        <input class="input" style="flex:1;min-width:0" value="${esc(t.text)}" placeholder="Task description…"
+        <input type="checkbox" ${done?'checked':''} style="accent-color:var(--green);width:15px;height:15px;flex-shrink:0;cursor:pointer;margin-right:2px"
+          onchange="plate.adHocSolo[${i}].done=this.checked;save('wt_plate_h',plate);renderAdHocSolo()">
+        <input class="input" style="flex:1;min-width:0;${done?'text-decoration:line-through;color:var(--text-muted)':''}" value="${esc(t.text)}" placeholder="Task description…"
           oninput="plate.adHocSolo[${i}].text=this.value;save('wt_plate_h',plate)">
-        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0">
+        <div style="display:flex;flex-direction:column;gap:3px;flex-shrink:0;${done?'opacity:0.4':''}">
           <div class="pill-group">${soloTimelinePills(t,i)}</div>
           <div class="pill-group">${soloChallengePills(t,i)}</div>
         </div>
