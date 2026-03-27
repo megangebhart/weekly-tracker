@@ -691,37 +691,17 @@ function renderFriday(){
   const summary=genSummary(w,fp);
 
   let priHtml=fp.length===0
-    ? `<div style="color:#7a6a55;font-size:14px;font-weight:300">No priorities set — add them in Monday Kickoff.</div>`
+    ? `<div style="color:var(--text-muted);font-size:14px;font-weight:300">No priorities set — add them in Monday Kickoff.</div>`
     : fp.map(p=>{
         const col=COMP_COLORS[p.completion]||'#9a8a75';
         return `<div class="comp-row">
           <div class="comp-pip" style="background:${col}"></div>
-          <div class="comp-label">${esc(p.text)||'<em style="color:#9a8a75">Untitled priority</em>'}</div>
+          <div class="comp-label">${esc(p.text)||'<em style="color:var(--text-muted)">Untitled priority</em>'}</div>
           <select class="comp-sel" onchange="updFriPri('${p.id}',this.value)">
             ${['Completed','Partial','Not Started'].map(o=>`<option${p.completion===o?' selected':''}>${o}</option>`).join('')}
           </select>
         </div>`;
       }).join('');
-
-  const adHoc=(w.friday.adHoc||[]);
-  let adhocHtml=adHoc.map((a,i)=>`
-    <div class="adhoc-card${a.flagged?' flagged':''}" id="adhoc-${a.id}">
-      <div class="adhoc-row">
-        <input class="input" style="flex:3" value="${esc(a.description)}" placeholder="What came up?"
-          oninput="weeks[activeWeekKey].friday.adHoc[${i}].description=this.value;save('wt_weeks_h',weeks);refreshSummary()">
-        <input class="input" style="flex:1;min-width:80px" value="${esc(a.time)}" placeholder="~time"
-          oninput="weeks[activeWeekKey].friday.adHoc[${i}].time=this.value;save('wt_weeks_h',weeks);refreshSummary()">
-        <button class="btn danger sm" onclick="delAdHoc('${a.id}')">✕</button>
-      </div>
-      <div class="adhoc-row" style="margin-bottom:4px">
-        <input class="input" value="${esc(a.source)}" placeholder="Requested by / source"
-          oninput="weeks[activeWeekKey].friday.adHoc[${i}].source=this.value;save('wt_weeks_h',weeks);refreshSummary()">
-      </div>
-      <label class="flag-tog${a.flagged?' flagged':''}">
-        <input type="checkbox"${a.flagged?' checked':''} onchange="toggleFlag('${a.id}',this.checked)">
-        ${a.flagged?'Flagged for manager summary':'Flag for manager'}
-      </label>
-    </div>`).join('');
 
   el.innerHTML=`
     <div class="card">
@@ -729,20 +709,30 @@ function renderFriday(){
       ${priHtml}
     </div>
     <div class="card">
-      <div class="card-label">Unplanned work</div>
-      <div id="adhoc-list">${adhocHtml}</div>
-      <button class="btn sage sm" style="margin-top:8px" onclick="addAdHoc()">+ Add item</button>
+      <div class="card-label">Progress Against Priorities</div>
+      <textarea class="input" style="min-height:100px" placeholder="How did the week go against your priorities? What moved, what didn't, what surprised you…"
+        oninput="weeks[activeWeekKey].friday.progressNotes=this.value;save('wt_weeks_h',weeks);refreshSummary()">${esc(w.friday.progressNotes||'')}</textarea>
     </div>
     <div class="card">
-      <div class="card-label">Carry forward</div>
-      <textarea class="input" id="fri-carry" placeholder="What's rolling into next week? Context, blockers, waiting-ons…"
-        oninput="weeks[activeWeekKey].friday.carryForward=this.value;save('wt_weeks_h',weeks);refreshSummary()">${esc(w.friday.carryForward)}</textarea>
+      <div class="card-label">Planned Work — Completed</div>
+      <textarea class="input" style="min-height:100px" placeholder="Planned tasks and projects you completed this week…"
+        oninput="weeks[activeWeekKey].friday.plannedCompleted=this.value;save('wt_weeks_h',weeks);refreshSummary()">${esc(w.friday.plannedCompleted||'')}</textarea>
+    </div>
+    <div class="card">
+      <div class="card-label">Unplanned Work — Completed</div>
+      <textarea class="input" style="min-height:100px" placeholder="Ad-hoc, reactive, or unplanned work you completed this week…"
+        oninput="weeks[activeWeekKey].friday.unplannedCompleted=this.value;save('wt_weeks_h',weeks);refreshSummary()">${esc(w.friday.unplannedCompleted||'')}</textarea>
+    </div>
+    <div class="card">
+      <div class="card-label">Carry Forward</div>
+      <textarea class="input" style="min-height:100px" placeholder="What's rolling into next week? Context, blockers, waiting-ons…"
+        oninput="weeks[activeWeekKey].friday.carryForward=this.value;save('wt_weeks_h',weeks);refreshSummary()">${esc(w.friday.carryForward||'')}</textarea>
     </div>
     <hr class="divider">
     <div class="card">
       <div class="card-label">Manager summary</div>
-      <div style="font-size:12px;color:#7a6a55;margin-bottom:14px;font-weight:300">Auto-generated from this week's data. Copy and send as-is.</div>
-      <div class="summary-box" id="summary-box">${summary||'Fill in priority check-ins above to generate your summary.'}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:14px;font-weight:300">Auto-generated from this week's data. Copy and send as-is.</div>
+      <div class="summary-box" id="summary-box">${summary||'Fill in sections above to generate your summary.'}</div>
       <div class="btn-row">
         <button class="btn sage sm" id="copy-btn" onclick="copySummary()">Copy to clipboard</button>
         <button class="btn sm" onclick="downloadReport()">Download report</button>
@@ -793,15 +783,14 @@ function genSummary(w,fp){
   const done=p.filter(x=>x.completion==='Completed').map(x=>x.text);
   const part=p.filter(x=>x.completion==='Partial').map(x=>x.text);
   const none=p.filter(x=>x.completion==='Not Started').map(x=>x.text);
-  const flagged=(w.friday.adHoc||[]).filter(x=>x.flagged);
-  const other=(w.friday.adHoc||[]).filter(x=>!x.flagged&&x.description);
   let s=`Week of ${fmtWeek(w.key)}\n\n`;
-  if(done.length)    s+=`Completed: ${done.join(', ')}\n`;
+  if(done.length)    s+=`Completed priorities: ${done.join(', ')}\n`;
   if(part.length)    s+=`In progress: ${part.join(', ')}\n`;
-  if(none.length)    s+=`Carrying forward: ${none.join(', ')}\n`;
-  if(flagged.length){s+=`\nUnplanned work (flagged):\n`;flagged.forEach(a=>{s+=`• ${a.description}${a.time?` (~${a.time})`:''}${a.source?` — ${a.source}`:''}\n`;});}
-  if(other.length)   s+=`\nOther ad hoc: ${other.map(a=>a.description).join(', ')}\n`;
-  if(w.friday.carryForward) s+=`\nNext week: ${w.friday.carryForward}\n`;
+  if(none.length)    s+=`Not started: ${none.join(', ')}\n`;
+  if(w.friday.progressNotes)     s+=`\nProgress notes:\n${w.friday.progressNotes}\n`;
+  if(w.friday.plannedCompleted)  s+=`\nPlanned work completed:\n${w.friday.plannedCompleted}\n`;
+  if(w.friday.unplannedCompleted)s+=`\nUnplanned work completed:\n${w.friday.unplannedCompleted}\n`;
+  if(w.friday.carryForward)      s+=`\nCarrying forward:\n${w.friday.carryForward}\n`;
   return s.trim();
 }
 function copySummary(){
